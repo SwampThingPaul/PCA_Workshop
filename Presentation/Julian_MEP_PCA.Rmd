@@ -1,0 +1,389 @@
+---
+title: "Multivariate Statistics Tips and Tricks"
+subtitle: "(Intro to PCA)"
+author: "Paul Julian"
+date: "April 2, 2020 (updated: `r Sys.Date()`)"
+output:
+  xaringan::moon_reader:
+    css: ["default", "css/sfah.css", "css/fonts.css"]
+    lib_dir: libs
+    nature:
+      slideNumberFormat: "%current%" 
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: "4:3"
+    seal: false
+editor_options: 
+  chunk_output_type: console
+---
+```{r setup, include=FALSE}
+library(knitr)
+library(fontawesome)
+
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+```
+
+layout: true
+
+<div class="my-footer"><span>https://swampthingecology.org</span></div>
+
+<!-- this adds the link footer to all slides, depends on my-footer class in css-->
+<!-- used https://arm.rbind.io/slides/xaringan.html to help build this presentation --->
+<!--
+```{r xaringan-logo, echo=FALSE}
+#xaringanExtra::use_logo(
+#  image_url = "D:/__logo/SWE_logo.png"
+#)
+```
+--->
+
+---
+name: xaringan-title
+class: left, middle
+background-image: url("D:/Photos/20180421_BCNPScenicTrail/DSCN7227.jpg")
+background-size: cover
+
+# Multivariate Statistics Tips and Tricks
+
+### .fancy[<font color="white">Intro to PCA</font>]
+
+<!--.large[<font color="white">Paul Julian, PhD | `r format(Sys.Date(),"%B %d,%Y")`</font>]-->
+
+.large[<font color="white">Paul Julian, PhD | `r format(as.Date("2020-04-02"),"%B %d, %Y")`</font>]
+
+<!-- this ends up being the title slide since seal = FALSE-->
+
+---
+class: middle, inverse
+
+```{r 0, out.width="75%",echo=FALSE,fig.align="center"}
+knitr::include_graphics("./_gifs/thankyou.gif")
+```
+
+- Thanks to Dr Zarah Pattison and the Modelling, Evidence and Policy Research group for the invitation.
+
+- Today's discussion will be loosely based on a recent [blog](https://swampthingecology.org/blog/pca-basics-in-rstats/) post on Principal Component Analysis.
+
+.footnote[
+[1] https://swampthingecology.org/blog/pca-basics-in-rstats/
+]
+
+---
+name: intro
+class: left
+
+### About Me
+
+.left-column[
+
+```{r, out.width="110%",echo=FALSE,fig.align="center"}
+knitr::include_graphics("D:/Photos/ProfilePics/6milecypressNorth.jpg")
+```
+]
+
+.right-column[
+- Not a statistician (just play one on TV)
+- Wetland Biogeochemist
+- PhD in Soil and Water Science (University of Florida)
+- Likes long walks on the beach...or a wetland...
+
+
+### .fancy[Find me at...]
+
+[`r fa(name = "twitter")` @swampthingpaul](http://twitter.com/swampthingpaul)  
+[`r fa(name = "github")` @swampthingpaul](http://github.com/swampthingpaul)  
+[`r fa(name = "link")` swampthingecology.org](https://swampthingecology.org)  
+[`r fa(name = "paper-plane")` pauljulianphd@gmail.com](mailto:pauljulianphd@gmail.com)
+]
+---
+name: ordinations
+class:left
+
+
+## Ordination Analysis
+
+A family of statistical analyses used to order multivariate data. 
+
+--
+
+Some common analyses include:
+
+--
+- **Principal Component Analysis (PCA)**
+
+--
+
+- Correspondance analysis (CA) and its derivatives
+  - detrended CA
+  - canonical CA
+
+--
+
+- Redundancy Analysis (RDA)
+
+--
+
+- Non-Metric Multidimensional Scaling (NMDS)
+
+--
+
+- Bray-Curtis Ordination <!--https://www.sciencedirect.com/science/article/pii/S0065250408601683--->
+
+---
+name: PCA
+class: left, middle
+
+## Principal Component Analysis
+
+
+.pull-left[
+
+*"A rose by any other name ..."*
+
+
+```{r, out.width="80%",echo=FALSE,fig.align="center",cap="BBC Two Gardeners' World Ep 16 (2019) cover."}
+knitr::include_graphics("https://ichef.bbci.co.uk/images/ic/640x360/p07ffzqb.jpg")
+```
+
+]
+
+--
+.pull-right[
+
+I have heard PCA called many names: 
+- ***unsupervised feature extraction***
+- ***dimensionality reduction***
+- statistical hand waving
+- mass plotting
+- magic
+]
+
+---
+name: PCA2
+```{r, out.width="65%",echo=FALSE,fig.align="center"}
+knitr::include_graphics("./_gifs/maths.gif")
+```
+
+* Rooted in linear algebra, its the simplest of the true eigenvector-based multivariate analyses.
+
+--
+
+* Creates weighted linear combination of the original varables to capture as much variance in the dataset whilest eliminating correlations/redundancies.
+
+--
+
+* Reveals the internal structure of the data in a way that best explains the variance in the data.
+
+---
+name: PCA3
+class: left
+## Principal Component Analysis
+
+Typically when talking about PCA you hear terms like *loading*, *eigenvectors* and *eigenvalues*.
+
+--
+
+- **Eigenvectors** are unit-scaled loadings. Mathematically, they are the column sum of squared loadings for a factor. It conceptually represents the amount of variance accounted for by a given factor.
+
+--
+
+- **Eigenvalues** is the measure of variation in the total sample accounted for by each factor. Computationally, a factor’s eigenvalues are determined as the sum of its squared factor loadings for all the variables. The ratio of eigenvalues is the ratio of explanatory importance of the factors with respect to the variables (remember this for later).
+
+--
+
+- **Factor Loadings** is the correlation between the original variables and the factors. Analogous to Pearson’s r, the squared factor loadings is the percent of variance in that variable explained by the factor
+
+---
+names: PCA4
+class: left
+## Principal Component Analysis
+
+Imagine a multivariate dataset...lets say lake water quality data
+
+```{r data example,echo=F}
+dat<-read.csv("D:/_GitHub/PCA_Workshop/data/lake_data.csv")
+library(AnalystHelper)
+library(reshape)
+
+dat.xtab=cast(dat,Station.ID+LAKE+Date.EST~param,value="HalfMDL",mean)
+
+# Cleaning up/calculating parameters
+dat.xtab$TN=with(dat.xtab,TN_Combine(NOx,TKN,TN))
+dat.xtab$DIN=with(dat.xtab, NOx+NH4)
+
+# More cleaning of the dataset 
+vars=c("Alk","Cl","Chla","DO","pH","SRP","TP","TN","DIN")
+dat.xtab=dat.xtab[,c("Station.ID","LAKE","Date.EST",vars)]
+
+head(dat.xtab[,c("Station.ID","LAKE","Date.EST","Alk","Chla","SRP","TP","TN","DIN")],4L)
+
+```
+
+--
+
+- or any other dataset with several different variables
+
+
+--
+PCA is a way to reduce the dimensionality of the data and determine what *statistically* matters. 
+
+
+--
+
+Its beyond a data winnowing technique it also shows similarity (or difference) between groups and relationships between variables.
+
+---
+
+name: PCA5
+class: left
+## Principal Component Analysis
+
+--
+
+### *Disadvantages*
+.pull-left[
+- PCA is data hungry
+
+```{r, out.width="75%",echo=FALSE,fig.align="center"}
+knitr::include_graphics("./_gifs/cookiemonster.gif")
+```
+]
+--
+
+.pull-right[
+- Fall victim to the curse of dimensionality.
+  - As dimensionality increases, effectiveness of the data decreases.
+  - As dimensions are added to a data set, the distance between points increases in the multivariate space. 
+
+
+```{r, out.width="80%",echo=FALSE,fig.align="center"}
+knitr::include_graphics("https://pvsmt99345.i.lithium.com/t5/image/serverpage/image-id/57591i4BEAC37E774C8C3B/image-size/large?v=1.0&px=999")
+```
+<!-- https://community.alteryx.com/t5/Data-Science-Blog/Tidying-up-with-PCA-An-Introduction-to-Principal-Components/ba-p/382557 --->
+
+]
+---
+name: PCA6
+class:left
+
+## PCA Assumptions
+
+--
+- **Multiple Variables:** An obvious assumption, a multivarate analysis needs multiple variables. Meant for continuous variables, but ordinal varables are frequently used. 
+
+--
+
+- **Sample Adequacy:** Size matters!! A general rule of thumbs has been a minimum of 150 cases (ie rows), or 5 to 10 cases per variable. 
+
+--
+
+- **Linearity:** It is assumed that the relationships between variables are linearly related. The basis of this assumption is rooted in the fact that PCA is based on Pearson correlation coefficients and therefore the assumptions of Pearson’s correlation also hold true. Generally, this assumption is somewhat relaxed.
+
+--
+
+- **Outliers:**  Outliers can have a disproportionate influence on the resulting component computation. Since principal components are estimated by essentially re-scaling the data retaining the variance outlier could skew the estimate of each component within a PCA. 
+
+---
+name: PCA7
+class: left
+
+## PCA Assumptions
+
+.pull-left[
+- One more thing about outliers.
+
+- Another way to visualize how PCA is performed is that it uses rotation of the original axes to derive a new axes, which maximizes the variance in the data set. 
+]
+
+--
+.pull-right[
+
+In 2D this looks like this:
+
+```{r,echo=FALSE,fig.width=4,fig.height=3.5,fig.align='center'}
+set.seed(1)
+x.val=sample(seq(-1,1,length.out=1000),100)*runif(100)
+y.val=x.val*runif(100,0.25,1.25)
+y.val=ifelse(y.val>0.2|y.val<(-0.2),y.val,runif(100,-0.2,0.2))
+
+par(family="serif",mar=c(0.5,0.5,0.5,0.5),oma=c(0.1,0.1,0.1,0.1),xpd=NA);
+plot(x.val,y.val,axes=F,ylab=NA,xlab=NA,type="n",ylim=c(-1,1),xlim=c(-1,1))
+abline(h=0,v=0)
+points(x.val,y.val,pch=21,bg=adjustcolor("dodgerblue1",0.5),cex=1.25,lwd=0.01)
+PCA1=lm(y.val~x.val)
+PCA1.pred=predict(PCA1,data.frame(x.val=seq(min(x.val),max(x.val),length.out=100)))
+lines(seq(min(x.val),max(x.val),length.out=100),PCA1.pred,col="red",lwd=2.5)
+text(max(x.val),max(PCA1.pred),"PCA1",pos=4,font=2)
+angle=atan(coef(PCA1)[2])
+angle.new=angle+(90*pi/180)
+
+lines(seq(min(x.val),max(x.val),length.out=100),seq(-0.1,0.1,length.out=100)*tan(angle.new),col="red",lwd=2)
+text(min(x.val),max(seq(-0.1,0.1,length.out=100)*tan(angle.new)),"PCA2",pos=2,font=2)
+#abline(a=0,b=tan(-45*pi/180))
+```
+]
+
+---
+name: R-time
+class: left
+
+## R you ready?
+
+PCA Analysis can be done through a variety of `R` Packages. Each have there own nuisances...
+
+--
+
+- `prcomp()` and `princomp()` are from the bases `stats` package. The quickest, easiest and most stable method
+
+--
+
+- `PCA()` in the `FactoMineR` package.
+
+- `dubi.pca()` in the `ade4` package.
+
+- `acp()` in the `amap` package.
+
+- `rda()` in the `vegan` package. More on this later. 
+
+--
+
+Personally, I only have experience working with `prcomp`, `princomp` and `rda` in the following examples we will be using `rda()` but this can be adapted to the other analyses.
+
+  - `rda()` performs redundancy analysis. Normally RDA is used for *“constrained ordination”* but without predictors, functionally RDA == PCA
+
+---
+name: R-time
+class: left
+
+## R you ready?
+
+For demonstration purposes we will use the dataset I introduced earlier
+
+--
+  - if we have time...and anyone is willing to explore their own data with the group.
+
+
+---
+name: end-slide
+class: end-slide, bottom, left, inverse
+background-image: url("D:/Photos/20180805_BCNPScenicTrail_Nth/DSCN8093.jpg")
+background-size: cover
+
+
+[`r fa(name = "paper-plane")` pauljulianphd@gmail.com](mailto:pauljulianphd@gmail.com)
+
+[`r fa(name = "github")` github.com/SwampThingPaul/PCA_Workshop](http://github.com/SwampThingPaul/PCA_Workshop)  
+
+
+
+```{r,include=FALSE,eval=FALSE}
+#from https://github.com/NBISweden/raukrtemplate
+
+# manually run this to render this document to HTML
+rmarkdown::render("presentation.Rmd")
+# manually run this to convert HTML to PDF
+#pagedown::chrome_print("presentation.html",output="presentation.pdf")
+```
