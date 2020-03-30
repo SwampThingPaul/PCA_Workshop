@@ -137,7 +137,7 @@ legend("topleft",legend=legend.text,pch=c(22,21),pt.bg=pt.col,col="black",lty=0,
 
 
 # Score Extraction --------------------------------------------------------
-scrs=scores(dat.xtab.pca,display=c("sites","species"),choices=c(1,2,3));
+scrs<-scores(dat.xtab.pca,display=c("sites","species"),choices=c(1,2,3));
 
 
 # Biplot ------------------------------------------------------------------
@@ -200,7 +200,7 @@ mtext(side=2,line=2.25,paste0("PCA 3 (",round(eig.pca$variance[3],1),"%)"));
 
 
 ##combine scores with orginal data
-dat.xtab=cbind(dat.xtab,scrs$sites)
+dat.xtab<-cbind(dat.xtab,scrs$sites)
 
 head(dat.xtab,3L)
 

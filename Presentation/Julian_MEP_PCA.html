@@ -318,12 +318,13 @@ library(REdaS)
 
 
 
-
+* If you are playing the home game you can follow along with [`.../PCA_rawcode.R`](https://github.com/SwampThingPaul/PCA_Workshop/blob/ec110772ab7131682c3906d353405a3f38e9c7b1/PCA_rawcode.R).
 
 .footnote[
 [1] https://github.com/SwampThingPaul/AnalystHelper
 
 [2] https://github.com/SwampThingPaul/PCA_Workshop
+
 ]
 
 ???
@@ -631,7 +632,7 @@ Now that we know which components are important, lets put together our biplot an
 
 
 ```r
-scrs&lt;-scores(dat.xtab.pca,display=c("sites","species"),choices=c(1,2,3));
+scrs &lt;- scores(dat.xtab.pca,display=c("sites","species"),choices=c(1,2,3));
 ```
 
 --
@@ -679,7 +680,7 @@ You can take this one even further by showing how each lake falls in the ordinat
 --
 
 ```r
-dat.xtab=cbind(dat.xtab,scrs$sites)
+dat.xtab &lt;- cbind(dat.xtab,scrs$sites)
 
 head(dat.xtab,3L)
 ```
