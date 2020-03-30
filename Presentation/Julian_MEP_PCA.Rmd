@@ -371,6 +371,8 @@ library(vegan)
 library(REdaS)
 ```
 
+--
+
 * For demonstration purposes we will use the dataset I introduced earlier [`.../data/lake_data.csv`](https://github.com/SwampThingPaul/PCA_Workshop/tree/ba3ca18155abe558e65d32ac2872d0ad27a33fad/data).
   - `dat<-read.csv(".../data/lake_data.csv")`
 
@@ -560,7 +562,7 @@ dat.xtab.pca <- rda(dat.xtab[,vars],scale = T)
 ```
 
 --
-  - Using `rda(... scale = T)` without predictors and scaled functionally produces a PCA. Can also compare usin `princomp()`. 
+  - Using `rda(... scale = T)` without predictors and scaled functionally produces a PCA. Can also compare using `princomp()`. 
   
 --
 
